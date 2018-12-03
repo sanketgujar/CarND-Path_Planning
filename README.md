@@ -123,4 +123,3 @@ The objective of this part is to calculate the trajectory based on the speed and
 
 1. [Spline](http://kluge.in-chemnitz.de/opensource/spline/)
 I added th file [src/spline.h](./scr/spline.h). Spline is the Cubic Spline interpolation implementation: a single .h file and you can use splines instead of polynomials. The spline implementation in mentioned in Trjectory module in Reflection
----
