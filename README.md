@@ -1,6 +1,6 @@
 # CarND-Path-Planning-Project
 Self-Driving Car Engineer Nanodegree Program
-   
+
 ### Simulator.
 You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).
 
@@ -38,13 +38,13 @@ Here is the data provided from the Simulator to the C++ Program
 #### Previous path data given to the Planner
 
 //Note: Return the previous list but with processed points removed, can be a nice tool to show how far along
-the path has processed since last time. 
+the path has processed since last time.
 
 ["previous_path_x"] The previous list of x points previously given to the simulator
 
 ["previous_path_y"] The previous list of y points previously given to the simulator
 
-#### Previous path's end s and d values 
+#### Previous path's end s and d values
 
 ["end_path_s"] The previous list's last point's frenet s value
 
@@ -52,7 +52,7 @@ the path has processed since last time.
 
 #### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
 
-["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates. 
+["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates.
 
 ## Details
 
@@ -60,10 +60,68 @@ the path has processed since last time.
 
 2. There will be some latency between the simulator running and the path planner returning a path, with optimized code usually its not very long maybe just 1-3 time steps. During this delay the simulator will continue using points that it was last given, because of this its a good idea to store the last points you have used so you can have a smooth transition. previous_path_x, and previous_path_y can be helpful for this transition since they show the last points given to the simulator controller with the processed points already removed. You would either return a path that extends this previous path or make sure to create a new path that has a smooth transition with this last path.
 
-## Tips
 
+## Spline
 A really helpful resource for doing this project and creating smooth trajectories was using http://kluge.in-chemnitz.de/opensource/spline/, the spline function is in a single hearder file is really easy to use.
 
+I added th file [src/spline.h](./scr/spline.h). Spline is the Cubic Spline interpolation implementation: a single .h file and you can use splines instead of polynomials.
+
+
+## Safe Valid trajectories
+
+### The car is able to drive at least 4.36 miles and an average of 15-20 miles without incident.
+
+### The car drives according to the speed limit and no warning was seen.
+
+### Car does not have collide with any other cars.
+
+<!-- ### The car stays in its lane, except for the time between changing lanes. -->
+
+### The car is able to change lanes
+
+
+### Jerk and max acceleration are not Exceeded and no warning signal is seen.
+
+
+## Report
+
+The seed code was provided in the start of the project. I implemented everything in a single file just to avoid jumping in files due to lack of time. My implementation consist of three parts:
+
+### Prediction [line 247-278](./src/main.cpp#L247)
+It deals with sensor fusion data and  telemetry. It reasons about the surrounding and is curious about main three aspects:
+
+- If there is a car to the right making a lane change not safe.
+- If a car is in front of us blocking the traffic.
+- Is there is a car to the left of us making a lane change not safe.
+
+It is solved by calculating the lane each other car is and the position it will be at the end of the last plan trajectory.
+
+A car will be considered "Dangerous" when its distance to our car is less than 30 meters in front or behind us.
+
+
+### Behavior [line 279-299](./src/main.cpp#L279)
+The main functions are:
+1. decide to change lanes or not
+2. decide to speed up or slow down
+
+Based on the prediction of the situation we are in, this part is responsible for making all the actions until its safe to do so.
+
+Instead of increasing the speed at this part of the code, a `speed_diff` is created to be used for speed changes when generating the trajectory. It makes the car more responsive towards fast changing situations when a car in front of it trying to apply breaks to cause a collision.
+
+### Trajectory [line 301-349](./src/main.cpp#L301)
+The objective of this part is to calculate the trajectory based on the speed and the lane layout, the surrounding car coordinates and path points.
+
+
+1. The last two points of the previous trajectory are are used in conjunction three points at a far distance to initialize the spline calculation.
+2. To make the work less complicated to the spline calculation based on those points, the coordinates are transformed (i.e. rotation and shift) to local car coordinates.
+3. To ensure more continuity in the trajectory, the pass trajectory points are copied   to the new trajectory.
+4. The rest of the points are calculated by evaluating the spline and transforming the output coordinates to not local coordinates.
+5. The speed change is decided by the behavior module, but it is used in that part to increase/decrease speed on every trajectory points instead of doing it for the complete trajectory.
+
+
+## Amendment
+
+1. [Spline](http://kluge.in-chemnitz.de/opensource/spline/)
 ---
 
 ## Dependencies
@@ -82,7 +140,7 @@ A really helpful resource for doing this project and creating smooth trajectorie
   * Run either `install-mac.sh` or `install-ubuntu.sh`.
   * If you install from source, checkout to commit `e94b6e1`, i.e.
     ```
-    git clone https://github.com/uWebSockets/uWebSockets 
+    git clone https://github.com/uWebSockets/uWebSockets
     cd uWebSockets
     git checkout e94b6e1
     ```
@@ -137,4 +195,3 @@ still be compilable with cmake and make./
 
 ## How to write a README
 A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
